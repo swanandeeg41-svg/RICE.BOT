@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>भात शेती प्रश्नोत्तर (Voice + Online)</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#f6f7fb; margin:0; padding:24px;}
+  .app{max-width:720px; margin:auto; background:#fff; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.06); overflow:hidden;}
+  header{padding:18px 20px; background:#0ea5e9; color:#fff; display:flex; align-items:center; justify-content:space-between}
+  header h1{font-size:18px; margin:0; font-weight:700}
+  header small{opacity:.95}
+  .content{padding:18px}
+  .row{display:flex; gap:8px; align-items:center; margin-top:8px}
+  input[type=text]{flex:1; padding:12px 14px; border:1px solid #e5e7eb; border-radius:12px; font-size:16px}
+  button{border:0; padding:12px 14px; border-radius:12px; cursor:pointer}
+  .mic{background:#22c55e; color:#fff}
+  .send{background:#0ea5e9; color:#fff}
+  .messages{max-height:52vh; overflow:auto; display:flex; flex-direction:column; gap:10px; padding:8px 0}
+  .msg{padding:12px 14px; border-radius:14px; max-width:85%}
+  .me{align-self:flex-end; background:#dcfce7}
+  .bot{align-self:flex-start; background:#eff6ff}
+  .hint{font-size:13px; color:#6b7280}
+  .pill{display:inline-block; padding:6px 10px; background:#f1f5f9; border-radius:999px; margin:4px 6px 0 0; cursor:pointer; font-size:13px}
+  .pill:hover{background:#e2e8f0}
+  details{background:#f8fafc; border-radius:12px; padding:10px 12px; margin-top:12px; border:1px dashed #e5e7eb}
+  summary{cursor:pointer; font-weight:600}
+  footer{padding:12px 16px; background:#f8fafc; font-size:12px; color:#64748b; display:flex; gap:10px; align-items:center}
+  code{background:#f1f5f9; padding:2px 6px; border-radius:6px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🌾 भात शेती प्रश्नोत्तर</h1>
+    <small>Voice + Offline Q&A + Online Search</small>
+  </header>
+  <div class="content">
+    <div class="messages" id="messages"></div>
+
+    <div class="hint">सूचना: मराठीत प्रश्न विचारा. ऑनलाइन असेल तर अधिक माहिती मिळेल. ऑफलाईन उत्तरं संक्षिप्त आहेत.</div>
+
+    <div class="row">
+      <input id="q" type="text" placeholder="उदा. बियाणे उपचार कसा करावा?">
+      <button class="mic" id="micBtn">🎙️ बोला</button>
+      <button class="send" id="sendBtn">पाठवा</button>
+    </div>
+
+    <div style="margin-top:12px">
+      <span class="pill" onclick="quick('बियाणे उपचार कसा करावा?')">बियाणे उपचार</span>
+      <span class="pill" onclick="quick('बीज प्रक्रियेत कोणते औषध वापरू?')">औषधे</span>
+      <span class="pill" onclick="quick('धानात तण नियंत्रण कधी करावे?')">तण नियंत्रण</span>
+      <span class="pill" onclick="quick('AWD सिंचन पद्धत काय आहे?')">AWD</span>
+      <span class="pill" onclick="quick('ब्लास्ट रोगावर उपाय सांगा')">ब्लास्ट</span>
+      <span class="pill" onclick="quick('BPH तुडतुडे व्यवस्थापन कसे?')">BPH</span>
+      <span class="pill" onclick="quick('युरिया कधी द्यावी?')">युरिया वेळ</span>
+    </div>
+
+    <details>
+      <summary>⚙️ Online Search सेटअप (optional)</summary>
+      <div style="margin-top:8px; font-size:14px">
+        Online fallback साठी खाली तुमचा Google Custom Search API तपशील भराः<br>
+        API Key: <input id="apiKey" placeholder="YOUR_API_KEY"> |
+        CX: <input id="cxId" placeholder="YOUR_CX_ID">
+        <div class="hint">हे रिकामे ठेवले तरी चालेल; अशावेळी फक्त ऑफलाईन उत्तरं मिळतील.</div>
+      </div>
+    </details>
+  </div>
+
+  <footer>
+    <div>GitHub Pages साठी फाईलचे नाव <code>index.html</code> ठेवा. QR साठी लिंक द्या.</div>
+  </footer>
+</div>
+
+<script>
+// ---------- Marathi Q&A (offline) ----------
+// प्रत्येक entry: {keys: ['keyword1','keyword2'...], answer: 'मराठी उत्तर'}
+const QA = [
+  {keys:['बीजप्रक्रिया काय','बीज प्रक्रिया काय','seed treatment काय'], answer:'बीजप्रक्रिया म्हणजे पेरणीपूर्वी बियाण्यांना बुरशीनाशक/जीवाणुनाशक/सूक्ष्मपोषकांनी प्रक्रिया करून उगवण व सुरुवातीचे संरक्षण सुधारणे.'},
+  {keys:['बियाणे उपचार कसा','बीज प्रक्रिया कशी','treatment kashi'], answer:'शुद्ध बियाणे घ्या. प्रति किलो बियाण्यास थायरम 2-3 ग्रॅम किंवा कार्बेन्डाझिम 2 ग्रॅम चोळा; सावलीत वाळवा. जैव-एजंट हवा असल्यास ट्रायकोडर्मा 10 ग्रॅम/किलो वापरा (रासायनिक व जैव प्रक्रिया वेगवेगळ्या दिवशी).'},
+  {keys:['मीठ द्रावण','salt solution','हलके बी वेगळे'], answer:'10 लि. पाण्यात 300 ग्रॅम मीठ घालून द्रावण तयार करा; बी टाका. वर तरंगणारे हलके/रोगट बी काढून टाका; तळाशी राहिलेले निरोगी बी 2-3 वेळा स्वच्छ पाण्याने धुवा व सावलीत 24 तास वाळवा.'},
+  {keys:['औषध कोणते','कुठले औषध','fungicide'], answer:'धानासाठी सामान्यतः थायरम, कार्बेन्डाझिम, मॅन्कोझेब (combination) वापरतात. जैविक पर्याय: ट्रायकोडर्मा 10 ग्रॅम/किलो. नेहमी लेबलवरील प्रमाण पाळा.'},
+  {keys:['उगवण वाढव','germination','विथरण'], answer:'बी 8-12 तास कोमट पाण्यात भिजवा; सावलीत वाळवा. शिफारस केलेला बीउपचार करा. ताजी व प्रमाणित बियाणे वापरा.'},
+  {keys:['युरिया कधी','टॉपड्रेस','fertilizer schedule'], answer:'सामान्यतः 100:50:50 N:P2O5:K2O कि.ग्रा./हे. (जमीन-परीक्षणानुसार बदला). नत्र अर्धे रोपांतरावेळी, उर्वरित दोन हप्ते—फुटवे फुटताना व लोंबीच्या सुरुवातीला.'},
+  {keys:['AWD','अल्टरनेट वेटिंग','सिंचन पद्धत'], answer:'AWD मध्ये बांधीत पाण्याची पातळी 5 सेमी ठेवून 3-5 दिवसांनी पाणी घटू द्या; फट दिसण्याआधी परत पाणी द्या. त्यामुळे पाणी बचत व उत्पादन स्थिर राहते.'},
+  {keys:['तण नियंत्रण','weed','निंदण'], answer:'रोपांतरानंतर 5-6 दिवसांनी बुटाक्लोर 50 EC ~3.5-4 लि./हे. (500 लि. पाण्यात) किंवा 15व्या दिवशी निंदण-कोळपणी; 2-3 आठवड्यांनी पुनः निंदण किंवा कोनोवीडर.'},
+  {keys:['ब्लास्ट','पानांवर डाग','रोग उपाय'], answer:'रोधक वाण/बीजप्रक्रिया करा. सुरुवातीला मॅन्कोझेब 2-2.5 ग्रॅम/लि. फवारणी; तीव्रता वाढल्यास ट्रायसायक्लाझॉल/आझॉक्सीस्ट्रोबिन शिफारशीप्रमाणे. नत्राचा अतिरेकी वापर टाळा.'},
+  {keys:['BPH','तुडतुडे','कांडीवर कीड'], answer:'पट्टा पद्धती/हवेची खेळती ठेव. पाण्याची पातळी कमी करा. आर्थिक तोटा पातळी ओलांडल्यास इमिडाक्लोप्रिड/बुप्रोफेझिन इ. शिफारस प्रमाणे. प्रौढ-निम्फ निरीक्षण करा.'},
+  {keys:['रोपवाटिका','नर्सरी','seeding rate'], answer:'गादीवाफा 100 सेमी रुंद; प्रति आर शेणखत ~300 कि.ग्रा., 1 कि.ग्रा. युरिया + 3 कि.ग्रा. SSP मिसळा. बारीक जाती 30-35 कि.ग्रा./हे., जाड 40-50 कि.ग्रा./हे.; संकरित 15-20 कि.ग्रा./हे.'},
+  {keys:['रोपांचे वय','रोपांतर','spacing'], answer:'21-25 दिवसांची रोपे; 20x15 सेमी अंतर (प्रति चुड 2-3 रोपे). संकरित: 15x15 सेमी व प्रति चुड 1 रोप.'},
+  {keys:['पाणी व्यवस्थापन','water level','बांधीत पाणी'], answer:'लावणीनंतर 2.5 सेमी; नंतर 5 सेमी पर्यंत. फुलोऱ्यावेळी ताण देऊ नका. कापणीपूर्वी 10 दिवस पाणी काढा.'},
+  {keys:['श्री पद्धत','SRI','system of rice intensification'], answer:'8-15 दिवसांची रोपे; 20x20 किंवा 25x25 सेमी, प्रति चुड 1 रोप; कमी पाणी, वारंवार निंदण/कोनोवीडर; बीजदर ~5 कि.ग्रा./हे. उत्पादन 20-30% वाढू शकते.'},
+  {keys:['कापणी','yield','मळणी'], answer:'ओंब्यात 90% दाणे पक्व झाल्यावर कापणी; कडपा वाळल्यानंतर मळणी करा.'}
+];
+
+// ---------- Helpers ----------
+function norm(s){
+  return (s||'').toLowerCase()
+    .replace(/[|/.,!?\-–—()]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function searchOffline(q){
+  const nq = norm(q);
+  // keyword match
+  for(const item of QA){
+    for(const k of item.keys){
+      if(nq.includes(norm(k))) return item.answer;
+    }
+  }
+  // loose match by token intersection
+  for(const item of QA){
+    const hit = item.keys.some(k=>{
+      const kk = norm(k).split(' ');
+      const tokens = nq.split(' ');
+      let common = kk.filter(t=>tokens.includes(t)).length;
+      return common >= Math.max(1, Math.ceil(kk.length*0.6));
+    });
+    if(hit) return item.answer;
+  }
+  return null;
+}
+
+function addMsg(t, who='bot'){
+  const m = document.createElement('div');
+  m.className = 'msg ' + (who==='me'?'me':'bot');
+  m.textContent = t;
+  document.getElementById('messages').appendChild(m);
+  m.scrollIntoView({behavior:'smooth', block:'end'});
+}
+
+function speak(text){
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'mr-IN';
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+async function onlineSearch(q){
+  const key = document.getElementById('apiKey').value.trim();
+  const cx  = document.getElementById('cxId').value.trim();
+  if(!key || !cx) return null; // no creds → skip
+  try{
+    const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(q)}&key=${encodeURIComponent(key)}&cx=${encodeURIComponent(cx)}`;
+    const res = await fetch(url);
+    if(!res.ok) return null;
+    const data = await res.json();
+    if(data.items && data.items[0]){
+      // Combine top snippets briefly
+      const top = data.items.slice(0,2).map(x=>x.snippet).join(' ');
+      return top || null;
+    }
+  }catch(e){
+    return null;
+  }
+  return null;
+}
+
+async function answer(q){
+  addMsg(q,'me');
+  let a = searchOffline(q);
+  if(a){
+    addMsg(a,'bot'); speak(a); return;
+  }
+  addMsg('ऑनलाइन शोधत आहे…','bot');
+  const online = await onlineSearch(q);
+  if(online){
+    addMsg(online,'bot'); speak(online); return;
+  }
+  const sorry = 'क्षमस्व, सध्या या प्रश्नाचं उत्तर उपलब्ध नाही. कृपया वेगळ्या शब्दांत विचारा किंवा ऑनलाइन सेटिंग्ज तपासा.';
+  addMsg(sorry,'bot'); speak(sorry);
+}
+
+// UI events
+document.getElementById('sendBtn').addEventListener('click',()=>{
+  const q = document.getElementById('q').value.trim();
+  if(q) { document.getElementById('q').value=''; answer(q); }
+});
+document.getElementById('q').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); document.getElementById('sendBtn').click(); }
+});
+function quick(t){ document.getElementById('q').value=t; document.getElementById('sendBtn').click(); }
+
+// Voice input
+document.getElementById('micBtn').addEventListener('click',()=>{
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ alert('तुमच्या ब्राउझरमध्ये voice input सपोर्ट नाही.'); return; }
+  const r = new SR();
+  r.lang = 'mr-IN';
+  r.interimResults = false;
+  r.maxAlternatives = 1;
+  r.onresult = (e)=>{
+    const text = e.results[0][0].transcript;
+    document.getElementById('q').value = text;
+    document.getElementById('sendBtn').click();
+  };
+  r.onerror = ()=> alert('Voice input मध्ये अडचण आली.');
+  r.start();
+});
+
+// Greet
+addMsg('नमस्कार! मराठीत तुमचा प्रश्न विचारा. उदा. "बियाणे उपचार कसा करावा?"','bot');
+</script>
+</body>
+</html>
